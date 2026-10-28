@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Recording Video List Builder</title>
+<style>
+:root{
+  --bg:#ffffff;--panel:#f7f8fa;--fg:#1f2328;--mut:#6b7280;--line:#d8dce2;--accent:#1a56db;--accent-fg:#ffffff;--warn:#b45309;--warnbg:#fef3c7;--danger:#b42318;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#16181c;--panel:#1d2025;--fg:#e6e8eb;--mut:#9aa1ab;--line:#33373e;--accent:#6ea0ff;--accent-fg:#0b1220;--warn:#fbbf24;--warnbg:#3a2f0b;--danger:#ff8a80}
+}
+:root[data-theme="dark"]{--bg:#16181c;--panel:#1d2025;--fg:#e6e8eb;--mut:#9aa1ab;--line:#33373e;--accent:#6ea0ff;--accent-fg:#0b1220;--warn:#fbbf24;--warnbg:#3a2f0b;--danger:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px 16px 64px}
+main{max-width:1040px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:17px;margin:0 0 10px}
+p{margin:0 0 8px}
+.sub{color:var(--mut);margin-bottom:20px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+input[type=text],input[type=url],textarea,select{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+textarea{min-height:230px;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:7px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button.small{padding:2px 7px;font-size:13px;line-height:1.3}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:13px;color:var(--mut)}
+.types{display:grid;gap:8px}
+.type{display:grid;grid-template-columns:minmax(90px,1.1fr) 60px auto minmax(120px,1.6fr) auto;gap:8px;align-items:center}
+.type input[type=color]{width:100%;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.type .nc{display:flex;gap:5px;align-items:center;font-size:13px;color:var(--mut);margin:0;white-space:nowrap}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th,td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle;text-align:left}
+th{background:var(--panel);font-size:13px;position:sticky;top:0;z-index:1}
+td input,td select{border-color:transparent;background:transparent;padding:5px 6px}
+td input:hover,td select:hover{border-color:var(--line)}
+tr.typed td{background:var(--c)}
+tr.wk td{border-top:2px solid var(--mut)}
+td.act{white-space:nowrap}
+td.min{width:64px}
+td.wkc{width:92px}td.lsc{width:96px}td.tyc{width:120px}td.lbc{width:170px}
+.badge{font-size:11px;background:var(--warnbg);color:var(--warn);border-radius:4px;padding:1px 5px;margin-left:4px;white-space:nowrap}
+.notes{background:var(--warnbg);color:var(--fg);border-radius:8px;padding:10px 12px;font-size:14px}
+.notes ul{margin:6px 0 0;padding-left:20px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 10px;font-size:14px}
+.sw{display:inline-block;width:14px;height:14px;border:1px solid var(--line);border-radius:3px;vertical-align:-2px;margin-right:6px}
+.links{display:grid;gap:8px}
+.lk{display:grid;grid-template-columns:110px 1fr 96px auto;gap:8px;align-items:center}
+.lk input:invalid{border-color:var(--danger)}
+.msg{margin-top:8px;font-size:14px}
+.msg.err{color:var(--danger)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) tr.typed td{background:color-mix(in srgb,var(--c) 32%,var(--bg))}
+}
+:root[data-theme="dark"] tr.typed td{background:color-mix(in srgb,var(--c) 32%,var(--bg))}
+@media (max-width:640px){.type{grid-template-columns:1fr 60px auto;}.type .kw,.type .rm{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Recording Video List Builder</h1>
+  <p class="sub">Paste your course outline, check the table, and save a color-coded PDF for your recording team.</p>
+
+  <section>
+    <h2>1. Course details</h2>
+    <div class="grid">
+      <div><label for="course">Course code (shown at the top of every page)</label><input type="text" id="course" placeholder="e.g., MBC 635"></div>
+      <div><label for="title">Title</label><input type="text" id="title" placeholder="Recording video list"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. PPD links</h2>
+    <p class="hint">Add a PPD link for every week of your course. The week name becomes a clickable link in the PDF, and you can’t save until every week in your outline has one. You can also enter the estimated total minutes for each week (for example, 60). It appears in small gray text under the week name in the PDF.</p>
+    <div class="links" id="links"></div>
+    <div class="row" style="margin-top:10px"><button id="addWeek" type="button">Add a week</button></div>
+  </section>
+
+  <section>
+    <h2>3. Video types and colors</h2>
+    <p class="hint">The first type is the default for videos with no tag and has no color. For a tag like [Lecture + iPad], the first matching type below the default wins, so it is colored as iPad. Keywords are matched against the text inside the brackets.</p>
+    <div class="types" id="types"></div>
+    <div class="row" style="margin-top:10px"><button id="addType">Add a type</button><button id="resetTypes">Reset to defaults</button></div>
+  </section>
+
+  <section>
+    <h2>4. Paste your outline</h2>
+    <textarea id="outline" spellcheck="false" placeholder="Week 1&#10;1. Lesson 1: Welcome (2 minutes) [Lecture]&#10;2. Lesson 2: Example&#10;   a. Section 2-1: Setup (5 min) [Lecture + iPad]"></textarea>
+    <p class="hint" style="margin-top:6px">One video per line. Put the type in [brackets] and the length as “5 min”. Start each week with “Week 1”. A “Lesson 1:” line groups the sections under it; a lesson with no sections under it is treated as one video.</p>
+    <div class="row" style="margin-top:8px"><button class="primary" id="build">Build list</button><button id="example">Load example</button><button id="clearAll" type="button">Clear everything</button><span class="hint" id="buildMsg"></span></div>
+  </section>
+
+  <section id="review" hidden>
+    <h2>5. Review and edit</h2>
+    <div id="notes"></div>
+    <div class="legend" id="legend"></div>
+    <div class="wrap"><table>
+      <thead><tr><th></th><th>Week</th><th>Lesson</th><th>Video</th><th>Min</th><th>Type (color)</th><th>Shown as</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <div class="row" style="margin-top:10px"><button id="addRow">Add a video at the end</button><span class="hint" id="counts"></span></div>
+  </section>
+
+  <section id="exportSec" hidden>
+    <h2>6. Save</h2>
+    <div class="row"><button class="primary" id="pdf">Save as PDF</button><button id="csv">Save as CSV</button></div>
+    <div class="msg" id="exportMsg"></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/*PARSER_START*/
+function stripMarker(s){
+  for(var i=0;i<2;i++){
+    var t=s.replace(/^(?:\d+[.)]|[a-zA-Z][.)]|[-•*–—])\s+/,'');
+    if(t===s) break; s=t;
+  }
+  return s;
+}
+function matchType(tag,types){
+  if(!tag) return {type:types[0].name,unknown:false};
+  var tl=tag.toLowerCase();
+  for(var i=1;i<types.length;i++){
+    var kws=types[i].keywords.split(',').map(function(k){return k.trim().toLowerCase()}).filter(Boolean);
+    if(kws.some(function(k){return tl.indexOf(k)>-1})) return {type:types[i].name,unknown:false};
+  }
+  var d=types[0].keywords.split(',').map(function(k){return k.trim().toLowerCase()}).filter(Boolean);
+  if(d.some(function(k){return tl.indexOf(k)>-1})) return {type:types[0].name,unknown:false};
+  return {type:types[0].name,unknown:true};
+}
+function makeRow(week,lesson,raw,types){
+  var s=raw,tag=null,min='';
+  s=s.replace(/\[([^\]]*)\]/,function(_,t){tag=t.trim();return ' ';});
+  s=s.replace(/\([^()]*\)/g,function(p){
+    var isNum=/^\(\s*~?\s*\d+(?:\.\d+)?\s*\)$/.test(p);
+    if(!isNum && !/min|\bmi\b/i.test(p)) return p;
+    var m=p.match(/^\(\s*(?:about|approx\.?|approximately)?\s*(~?)\s*(\d+(?:\.\d+)?)\s*(?:[-–]\s*(\d+(?:\.\d+)?))?\s*(?:min(?:ute)?s?|mi)?\b[^)]*\)$/i);
+    if(!m) return p;
+    if(!min) min=(m[1]||'')+(m[3]||m[2]);
+    return ' ';
+  });
+  if(!min){
+    var mm=s.match(/(~?\d+(?:\.\d+)?)\s*(?:min(?:ute)?s?|mi)\b/i);
+    if(mm){min=mm[1];s=s.replace(mm[0],' ');}
+  }
+  s=s.replace(/\s+/g,' ').trim();
+  s=s.replace(/^section\s+/i,'');
+  s=s.replace(/^(\d+)\s*[-.]\s*(\d+)\s*[:.\-–—]?\s*(.*)$/,function(_,a,b,rest){return rest? a+'-'+b+': '+rest : a+'-'+b;});
+  s=s.replace(/[\s:;,\-–—]+$/,'').trim();
+  if(!s && !tag && !min) return null;
+  var mt=matchType(tag,types);
+  var label=tag? tag.replace(/\s*\+\s*/g,' + ').replace(/\s+/g,' ') : types[0].name;
+  return {week:week,lesson:lesson,video:s,min:min,type:mt.type,label:label,untagged:!tag,unknown:mt.unknown};
+}
+function parseOutline(text,types){
+  var rows=[],week='',lesson='',pending=null;
+  var flush=function(){ if(pending && pending.video) rows.push(pending); pending=null; };
+  var lines=text.split(/\r?\n/);
+  for(var i=0;i<lines.length;i++){
+    var s=lines[i].replace(/\t/g,' ').trim();
+    if(!s) continue;
+    s=stripMarker(s);
+    var m=s.match(/^(week|module|unit)\s*(\d+)\b/i);
+    if(m){ flush(); week=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2]; lesson=''; continue; }
+    m=s.match(/^lesson\s*(\d+)\s*[:.\-–—]?\s*(.*)$/i);
+    if(m){ flush(); lesson='Lesson '+m[1]; var lr=makeRow(week,lesson,m[2],types); pending=(lr&&lr.video)?lr:null; continue; }
+    pending=null;
+    var r=makeRow(week,lesson,s,types);
+    if(r && r.video) rows.push(r);
+  }
+  flush();
+  return rows;
+}
+/*PARSER_END*/
+
+(function(){
+  var DEFAULT_TYPES=[
+    {name:'Lecture',color:'',keywords:'lecture'},
+    {name:'iPad',color:'#cfe3fb',keywords:'ipad'},
+    {name:'Excel',color:'#cdeed6',keywords:'excel, demo'}
+  ];
+  var EXAMPLE=[
+    'Week 0','  1. Welcome (2 minutes) [Lecture]','',
+    'Week 1  (Estimated 20 minutes in total)',
+    '  1. Lesson 1: What is operations management  (3 minutes) [Lecture]',
+    '  2. Lesson 2: Describing a process (~12 minutes)',
+    '     a. Section 2-1: Intro and define “process” (1.5 min) [Lecture]',
+    '     b. Section 2-2: Cycle time and flow time (8.5 min) [Lecture+iPad]',
+    '     c. Section 2-3: Example in a spreadsheet (2 min) [Excel Demo]',
+    '  3. Lesson 3: Conclusion (1 minute)'
+  ].join('\n');
+  var state={course:'',title:'Recording video list',breaks:'',types:JSON.parse(JSON.stringify(DEFAULT_TYPES)),outline:'',rows:[],linkRows:[{week:'Week 1',url:''}],built:false};
+  var $=function(id){return document.getElementById(id)};
+  var saveTimer=null;
+
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){ try{ localStorage.setItem('vlb:v2',JSON.stringify(state)); }catch(e){} },300);
+  }
+  function load(){
+    try{
+      var raw=localStorage.getItem('vlb:v2');
+      if(raw){ var s=JSON.parse(raw); if(s&&s.types&&s.types.length){ for(var k in state){ if(s[k]!==undefined) state[k]=s[k]; } if(!s.linkRows&&s.links){ state.linkRows=Object.keys(s.links).map(function(w){return {week:w,url:s.links[w]};}); } } }
+    }catch(e){}
+  }
+  function el(tag,props,kids){
+    var e=document.createElement(tag);
+    if(props) for(var k in props){ if(k==='text') e.textContent=props[k]; else if(k==='class') e.className=props[k]; else e[k]=props[k]; }
+    (kids||[]).forEach(function(c){ if(c) e.appendChild(c); });
+    return e;
+  }
+  function typeByName(n){ for(var i=0;i<state.types.length;i++) if(state.types[i].name===n) return state.types[i]; return state.types[0]; }
+
+  /* ---- types ---- */
+  function renderTypes(){
+    var box=$('types'); box.textContent='';
+    state.types.forEach(function(t,i){
+      var name=el('input',{type:'text',value:t.name,'aria-label':'Type name'});
+      name.addEventListener('input',function(){ var old=t.name; t.name=name.value; state.rows.forEach(function(r){ if(r.type===old) r.type=t.name; }); renderLegend(); renderTable(); save(); });
+      var col=el('input',{type:'color',value:t.color||'#ffffff','aria-label':'Color'});
+      col.disabled=!t.color;
+      col.addEventListener('input',function(){ t.color=col.value; renderLegend(); renderTable(); save(); });
+      var nc=el('label',{class:'nc'});
+      var cb=el('input',{type:'checkbox',checked:!t.color});
+      if(i===0){ cb.checked=true; cb.disabled=true; }
+      cb.addEventListener('change',function(){ t.color=cb.checked?'':(col.value&&col.value!=='#ffffff'?col.value:'#cfe3fb'); col.value=t.color||'#ffffff'; col.disabled=!t.color; renderLegend(); renderTable(); save(); });
+      nc.appendChild(cb); nc.appendChild(document.createTextNode('No color'));
+      var kw=el('input',{type:'text',value:t.keywords,placeholder:'keywords, separated by commas','aria-label':'Keywords'});
+      kw.addEventListener('input',function(){ t.keywords=kw.value; save(); });
+      var rm=el('button',{class:'small danger rm',text:'Remove',type:'button'});
+      rm.disabled=(i===0);
+      rm.addEventListener('click',function(){
+        state.rows.forEach(function(r){ if(r.type===t.name) r.type=state.types[0].name; });
+        state.types.splice(i,1); renderTypes(); renderLegend(); renderTable(); save();
+      });
+      var kwWrap=el('div',{class:'kw'},[kw]);
+      box.appendChild(el('div',{class:'type'},[name,col,nc,kwWrap,rm]));
+    });
+  }
+  function renderLegend(){
+    var lg=$('legend'); lg.textContent='';
+    state.types.forEach(function(t){
+      var sw=el('i',{class:'sw'}); if(t.color) sw.style.background=t.color;
+      lg.appendChild(el('span',null,[sw,document.createTextNode(t.name+(t.color?'':' (no color)'))]));
+    });
+  }
+
+  /* ---- table ---- */
+  function weeksInOrder(){
+    var out=[]; state.rows.forEach(function(r){ if(r.week && out.indexOf(r.week)<0) out.push(r.week); }); return out;
+  }
+  function renderTable(){
+    var tb=$('tbody'); tb.textContent='';
+    var prev=null;
+    state.rows.forEach(function(r,i){
+      var t=typeByName(r.type);
+      var tr=el('tr'); 
+      if(t.color){ tr.className='typed'; tr.style.setProperty('--c',t.color); }
+      if(r.week!==prev && i>0) tr.classList.add('wk');
+      prev=r.week;
+      var act=el('td',{class:'act'});
+      var up=el('button',{class:'small',text:'↑',type:'button',title:'Move up'}); up.disabled=(i===0);
+      up.addEventListener('click',function(){ swap(i,i-1); });
+      var dn=el('button',{class:'small',text:'↓',type:'button',title:'Move down'}); dn.disabled=(i===state.rows.length-1);
+      dn.addEventListener('click',function(){ swap(i,i+1); });
+      var add=el('button',{class:'small',text:'+',type:'button',title:'Add a video below'});
+      add.addEventListener('click',function(){ state.rows.splice(i+1,0,{week:r.week,lesson:r.lesson,video:'',min:'',type:state.types[0].name,label:state.types[0].name,untagged:false,unknown:false}); renderAll(); save(); });
+      var del=el('button',{class:'small danger',text:'✕',type:'button',title:'Delete this row'});
+      del.addEventListener('click',function(){ state.rows.splice(i,1); renderAll(); save(); });
+      [up,dn,add,del].forEach(function(b){ act.appendChild(b); });
+      tr.appendChild(act);
+      tr.appendChild(cellInput(r,'week','wkc'));
+      tr.appendChild(cellInput(r,'lesson','lsc'));
+      var vtd=cellInput(r,'video','');
+      if(r.untagged||r.unknown){
+        var b=el('span',{class:'badge',text:r.unknown?'unrecognized tag':'no tag'});
+        vtd.appendChild(b);
+      }
+      tr.appendChild(vtd);
+      tr.appendChild(cellInput(r,'min','min'));
+      var sel=el('select',{'aria-label':'Type'});
+      state.types.forEach(function(tt){ var o=el('option',{value:tt.name,text:tt.name}); if(tt.name===r.type) o.selected=true; sel.appendChild(o); });
+      sel.addEventListener('change',function(){ r.type=sel.value; r.untagged=false; r.unknown=false; renderTable(); renderCounts(); save(); });
+      tr.appendChild(el('td',{class:'tyc'},[sel]));
+      tr.appendChild(cellInput(r,'label','lbc'));
+      tb.appendChild(tr);
+    });
+    renderCounts(); renderNotes();
+  }
+  function cellInput(r,field,cls){
+    var inp=el('input',{type:'text',value:r[field]||'','aria-label':field});
+    inp.addEventListener('input',function(){ r[field]=inp.value; if(field==='label'||field==='video'){ r.untagged=r.untagged&&field!=='label'; } renderNotes(); save(); });
+    return el('td',{class:cls},[inp]);
+  }
+  function swap(a,b){ var t=state.rows[a]; state.rows[a]=state.rows[b]; state.rows[b]=t; renderTable(); save(); }
+  function renderCounts(){
+    var c={}; state.types.forEach(function(t){c[t.name]=0;}); state.rows.forEach(function(r){ c[r.type]=(c[r.type]||0)+1; });
+    $('counts').textContent=state.rows.length+' videos: '+state.types.map(function(t){return c[t.name]+' '+t.name}).join(', ');
+  }
+  function renderNotes(){
+    var n=$('notes'); n.textContent='';
+    var u=state.rows.filter(function(r){return r.untagged}).length;
+    var k=state.rows.filter(function(r){return r.unknown}).length;
+    var m=state.rows.filter(function(r){return !r.min}).length;
+    var items=[];
+    if(u) items.push(u+' video'+(u>1?'s have':' has')+' no [tag] and '+(u>1?'are':'is')+' set to '+state.types[0].name+'.');
+    if(k) items.push(k+' video'+(k>1?'s have':' has')+' a tag that matched none of your types and '+(k>1?'are':'is')+' set to '+state.types[0].name+'. Check the “Type” column.');
+    if(m) items.push(m+' video'+(m>1?'s have':' has')+' no length; the PDF will show a dash.');
+    if(!items.length){ n.hidden=true; return; }
+    n.hidden=false; n.className='notes';
+    n.appendChild(el('strong',{text:'Please check:'}));
+    var ul=el('ul'); items.forEach(function(x){ ul.appendChild(el('li',{text:x})); }); n.appendChild(ul);
+  }
+  function weekKey(w){ var m=/\d+/.exec(w||''); return m?'n'+parseInt(m[0],10):'s'+String(w||'').trim().toLowerCase(); }
+  function linkFor(w){
+    var k=weekKey(w);
+    for(var i=0;i<state.linkRows.length;i++){ var lr=state.linkRows[i]; if(weekKey(lr.week)===k && /^https?:\/\/\S+/i.test(lr.url||'')) return lr.url.trim(); }
+    return '';
+  }
+  function estFor(w){
+    var k=weekKey(w);
+    for(var i=0;i<state.linkRows.length;i++){ var lr=state.linkRows[i]; if(weekKey(lr.week)===k){ var v=String(lr.est||'').replace(/[^\d.~]/g,''); if(v) return v; } }
+    return '';
+  }
+  function renderLinks(){
+    var box=$('links'); box.textContent='';
+    state.linkRows.forEach(function(lr,i){
+      var name=el('input',{type:'text',value:lr.week,'aria-label':'Week name',placeholder:'Week 1'});
+      name.addEventListener('input',function(){ lr.week=name.value; save(); });
+      var inp=el('input',{type:'url',required:true,value:lr.url||'',placeholder:'https://…','aria-label':'PPD link for '+(lr.week||'week')});
+      inp.addEventListener('input',function(){ lr.url=inp.value.trim(); save(); });
+      var est=el('input',{type:'text',value:lr.est||'',placeholder:'Est. min','aria-label':'Estimated total minutes for '+(lr.week||'week'),inputMode:'decimal'});
+      est.addEventListener('input',function(){ lr.est=est.value.trim(); save(); });
+      var rm=el('button',{class:'small danger',type:'button',text:'Remove'});
+      rm.addEventListener('click',function(){ state.linkRows.splice(i,1); renderLinks(); save(); });
+      box.appendChild(el('div',{class:'lk'},[name,inp,est,rm]));
+    });
+  }
+  function showSections(){
+    var has=state.rows.length>0;
+    $('review').hidden=!has; $('exportSec').hidden=!has;
+  }
+  function renderAll(){ showSections(); renderLegend(); renderTable(); }
+
+  /* ---- export ---- */
+  function hexToRgb(h){ var m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h||''); return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null; }
+  function weekNum(w){ var m=/\d+/.exec(w||''); return m?parseInt(m[0],10):null; }
+  function buildPdf(){
+    var jsPDF=window.jspdf.jsPDF;
+    var doc=new jsPDF({unit:'pt',format:'letter'});
+    var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+    var L=48, R=48, course=state.course.trim();
+    var rows=state.rows;
+    var segs=[rows];
+
+    // title block
+    doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(31,35,40);
+    doc.text(state.title||'Video list',L,66);
+    var counts={}; state.types.forEach(function(t){counts[t.name]=0}); rows.forEach(function(r){counts[r.type]=(counts[r.type]||0)+1});
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(75,85,99);
+    doc.text(rows.length+' videos: '+state.types.map(function(t){return counts[t.name]+' '+t.name}).join(', '),L,84);
+    var lx=L, ly=100;
+    doc.setFontSize(9); doc.setTextColor(31,35,40);
+    state.types.forEach(function(t){
+      var rgb=hexToRgb(t.color)||[255,255,255];
+      doc.setFillColor(rgb[0],rgb[1],rgb[2]); doc.setDrawColor(184,190,199); doc.setLineWidth(.5);
+      doc.rect(lx,ly,12,12,'FD');
+      var lab=t.name+(t.color?'':' (no color)');
+      doc.text(lab,lx+18,ly+9);
+      lx+=18+doc.getTextWidth(lab)+22;
+    });
+    var startY=ly+26;
+
+    var colW={0:56,1:52,3:36,4:112};
+    colW[2]=W-L-R-colW[0]-colW[1]-colW[3]-colW[4];
+    segs.forEach(function(seg,si){
+      var body=[],meta=[],pw=null;
+      seg.forEach(function(r){
+        var first=r.week!==pw; pw=r.week;
+        body.push([first?r.week:'',r.lesson||'',r.video||'',r.min||'—',r.label||r.type]);
+        meta.push({first:first,week:r.week,type:typeByName(r.type)});
+      });
+      if(si>0){ doc.addPage(); startY=48; }
+      doc.autoTable({
+        startY:startY, head:[['Week','Lesson','Video','Min','Type']], body:body,
+        margin:{left:L,right:R,top:48,bottom:40}, theme:'grid',
+        styles:{font:'helvetica',fontSize:9,cellPadding:3,lineColor:[184,190,199],lineWidth:.4,textColor:[31,35,40],valign:'middle',overflow:'linebreak'},
+        headStyles:{fillColor:[229,231,235],textColor:[31,35,40],fontStyle:'bold'},
+        columnStyles:{0:{cellWidth:colW[0],fontStyle:'bold'},1:{cellWidth:colW[1]},2:{cellWidth:colW[2]},3:{cellWidth:colW[3]},4:{cellWidth:colW[4]}},
+        didParseCell:function(d){
+          if(d.section!=='body') return;
+          var m=meta[d.row.index], rgb=hexToRgb(m.type.color);
+          if(rgb) d.cell.styles.fillColor=rgb; else d.cell.styles.fillColor=[255,255,255];
+          if(d.column.index===0 && m.first && linkFor(m.week)) d.cell.styles.textColor=[26,86,219];
+          if(d.column.index===0 && m.first && estFor(m.week)){ d.cell.styles.valign='top'; d.cell.styles.minCellHeight=26; }
+        },
+        didDrawCell:function(d){
+          if(d.section!=='body') return;
+          var m=meta[d.row.index];
+          if(m.first && d.row.index>0){
+            doc.setDrawColor(75,85,99); doc.setLineWidth(1.3);
+            doc.line(d.cell.x,d.cell.y,d.cell.x+d.cell.width,d.cell.y);
+          }
+          if(d.column.index===0 && m.first && estFor(m.week)){
+            doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(107,114,128);
+            doc.text('Est. '+estFor(m.week)+' min',d.cell.x+d.cell.padding('left'),d.cell.y+19);
+            doc.setTextColor(31,35,40);
+          }
+          if(d.column.index===0 && m.first && linkFor(m.week)){
+            doc.setFont('helvetica','bold'); doc.setFontSize(9);
+            var tw=doc.getTextWidth(String(d.cell.text[0]||''));
+            var tx=d.cell.x+d.cell.padding('left'), ty=estFor(m.week)?d.cell.y+11.8:d.cell.y+d.cell.height/2+3.6;
+            doc.setDrawColor(26,86,219); doc.setLineWidth(.6); doc.line(tx,ty,tx+tw,ty);
+            doc.link(d.cell.x,d.cell.y,d.cell.width,d.cell.height,{url:linkFor(m.week)});
+          }
+        }
+      });
+    });
+    var n=doc.getNumberOfPages();
+    for(var p=1;p<=n;p++){
+      doc.setPage(p);
+      if(course){ doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(31,35,40); doc.text(course,L,34); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(128,128,128);
+      doc.text('Page '+p,W-R,H-22,{align:'right'});
+    }
+    return doc;
+  }
+  function csvEsc(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+  function buildCsv(){
+    var out=[['Week','Lesson','Video','Min','Type','Shown as','PPD link','Estimated minutes']];
+    state.rows.forEach(function(r){ out.push([r.week,r.lesson,r.video,r.min,r.type,r.label,linkFor(r.week),estFor(r.week)]); });
+    return out.map(function(r){return r.map(csvEsc).join(',')}).join('\n');
+  }
+  function fname(ext){
+    var base=(state.course.trim()||'course').replace(/[^\w\-]+/g,'_');
+    return base+'_video_list.'+ext;
+  }
+  async function saveFile(filename,data){
+    var msg=$('exportMsg'); msg.className='msg'; msg.textContent='';
+    var dl=null;
+    try{ dl=await claude.use('downloads'); }catch(e){}
+    if(!dl){
+      try{
+        var blob=(typeof data==='string')?new Blob(['\ufeff'+data],{type:'text/csv;charset=utf-8'}):data;
+        var a=document.createElement('a');
+        a.href=URL.createObjectURL(blob); a.download=filename; a.style.display='none';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+        msg.textContent='Downloaded '+filename+'. Check your Downloads folder.';
+      }catch(err){
+        msg.className='msg err'; msg.textContent='Could not download the file. Try opening this tool in a browser such as Chrome or Edge.';
+      }
+      return;
+    }
+    try{
+      var res=await dl.save({filename:filename,data:data});
+      msg.textContent=(res&&res.status==='saved')?'Saved.':'Done.';
+    }catch(e){
+      if(e&&e.code==='declined'){ msg.textContent='Save canceled.'; }
+      else{ msg.className='msg err'; msg.textContent='Could not save the file ('+((e&&e.code)||'error')+').'; }
+    }
+  }
+
+  function linksOk(){
+    var ws=weeksInOrder();
+    var missing=ws.filter(function(w){ return !linkFor(w); });
+    if(!missing.length) return true;
+    missing.forEach(function(w){
+      var k=weekKey(w), found=false;
+      state.linkRows.forEach(function(lr){ if(weekKey(lr.week)===k) found=true; });
+      if(!found) state.linkRows.push({week:w,url:''});
+    });
+    renderLinks(); save();
+    var m=$('exportMsg'); m.className='msg err';
+    m.textContent='Add a PPD link for every week before saving. Missing: '+missing.join(', ')+'. The PPD link boxes are at the top of the page (step 2).';
+    var rowsEl=$('links').querySelectorAll('.lk'), first=null;
+    state.linkRows.forEach(function(lr,i){ if(!first && !linkFor(lr.week)) first=rowsEl[i]; });
+    if(first){ var f=first.querySelector('input[type=url]'); f.scrollIntoView({block:'center'}); f.focus(); }
+    return false;
+  }
+
+  /* ---- wiring ---- */
+  function bind(){
+    $('course').value=state.course; $('title').value=state.title; $('outline').value=state.outline;
+    $('course').addEventListener('input',function(){ state.course=this.value; save(); });
+    $('title').addEventListener('input',function(){ state.title=this.value; save(); });
+    $('outline').addEventListener('input',function(){ state.outline=this.value; save(); });
+    $('addType').addEventListener('click',function(){ state.types.push({name:'New type',color:'#fde68a',keywords:''}); renderTypes(); renderLegend(); renderTable(); save(); });
+    $('resetTypes').addEventListener('click',function(){
+      state.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));
+      state.rows.forEach(function(r){ if(!state.types.some(function(t){return t.name===r.type})) r.type=state.types[0].name; });
+      renderTypes(); renderLegend(); renderTable(); save();
+    });
+    $('clearAll').addEventListener('click',function(){
+      state.outline=''; state.rows=[]; state.linkRows=[{week:'Week 1',url:''}];
+      $('outline').value=''; $('buildMsg').textContent=''; $('exportMsg').textContent='';
+      renderAll(); renderLinks(); save();
+    });
+    $('example').addEventListener('click',function(){ $('outline').value=EXAMPLE; state.outline=EXAMPLE; $('buildMsg').textContent='Example loaded. Click “Build list”.'; save(); });
+    $('build').addEventListener('click',function(){
+      var txt=$('outline').value;
+      if(!txt.trim()){ $('buildMsg').textContent='Paste an outline first.'; return; }
+      state.outline=txt;
+      state.rows=parseOutline(txt,state.types);
+      $('buildMsg').textContent=state.rows.length?('Found '+state.rows.length+' videos.'):'No videos found. Check that weeks start with “Week 1” and each video is on its own line.';
+      renderAll(); save();
+      if(state.rows.length){ $('review').scrollIntoView({behavior:'smooth',block:'start'}); }
+    });
+    $('addRow').addEventListener('click',function(){
+      var last=state.rows[state.rows.length-1]||{week:'Week 1',lesson:''};
+      state.rows.push({week:last.week,lesson:last.lesson,video:'',min:'',type:state.types[0].name,label:state.types[0].name,untagged:false,unknown:false});
+      renderAll(); save();
+    });
+    $('addWeek').addEventListener('click',function(){
+      var max=0; state.linkRows.forEach(function(lr){ var m=/\d+/.exec(lr.week||''); if(m) max=Math.max(max,parseInt(m[0],10)); });
+      state.linkRows.push({week:'Week '+(max+1),url:''}); renderLinks(); save();
+      var ins=$('links').querySelectorAll('input[type=url]'); ins[ins.length-1].focus();
+    });
+    $('pdf').addEventListener('click',function(){
+      if(!linksOk()) return;
+      if(!window.jspdf||!window.jspdf.jsPDF){ var m=$('exportMsg'); m.className='msg err'; m.textContent='The PDF library did not load. Check your connection and reload.'; return; }
+      var doc; try{ doc=buildPdf(); }catch(e){ var m2=$('exportMsg'); m2.className='msg err'; m2.textContent='Could not build the PDF: '+e.message; return; }
+      saveFile(fname('pdf'),doc.output('blob'));
+    });
+    $('csv').addEventListener('click',function(){ if(!linksOk()) return; saveFile(fname('csv'),buildCsv()); });
+  }
+  load(); bind(); renderTypes(); renderLinks(); renderAll();
+})();
+</script>
+</body>
+</html>
